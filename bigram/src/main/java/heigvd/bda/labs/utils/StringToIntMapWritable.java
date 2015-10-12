@@ -24,6 +24,10 @@ public class StringToIntMapWritable implements Writable {
 	public String toString() {
 		return hm.toString();
 	}
+	
+	public HashMap<String, Integer> getHashMap(){
+		return hm;
+	}
 
 	public void readFields(DataInput in) throws IOException {
 		int len = in.readInt();
