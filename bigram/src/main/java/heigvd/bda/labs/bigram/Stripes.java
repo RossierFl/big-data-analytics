@@ -68,13 +68,15 @@ public class Stripes extends Configured implements Tool {
 	
 	public static class StripesMapper extends Mapper<LongWritable, Text, Text, StringToIntMapWritable> {
 
-		private Map<Text, StringToIntMapWritable> map;
+		private Map<String, StringToIntMapWritable> map;
+		private Text keyRes;
 		
 		@Override
 		protected void setup(Context context) throws IOException,
 				InterruptedException {
 			super.setup(context);
-			map = new HashMap<Text, StringToIntMapWritable>();
+			map = new HashMap<String, StringToIntMapWritable>();
+			keyRes = new Text();
 		}
 		
 		@Override
@@ -89,28 +91,24 @@ public class Stripes extends Configured implements Tool {
 				}else{
 					StringToIntMapWritable mapForToken = new StringToIntMapWritable();
 					mapForToken.increment(tokens[i+1]);
-					map.put(new Text(tokens[i]), mapForToken);
+					map.put(tokens[i], mapForToken);
 				}			
 			}
-			
+			Iterator it = map.entrySet().iterator();
+		    while (it.hasNext()) {
+		        Map.Entry pair = (Map.Entry)it.next();
+		        keyRes.set((String)pair.getKey());
+		        context.write(keyRes, (StringToIntMapWritable)pair.getValue());
+		        it.remove();
+		    }
 		}
 
 		@Override
 		protected void cleanup(Mapper<LongWritable, Text, Text, StringToIntMapWritable>.Context context)
 				throws IOException, InterruptedException {
 			super.cleanup(context);
-			Iterator it = map.entrySet().iterator();
-		    while (it.hasNext()) {
-		        Map.Entry pair = (Map.Entry)it.next();
-		        context.write((Text)pair.getKey(), (StringToIntMapWritable)pair.getValue());
-		        it.remove();
-		    }
-		    
+			
 		}
-		
-		
-		
-		
 	}
 	
 	public static class StripesCombiner extends Reducer<Text, StringToIntMapWritable, Text, StringToIntMapWritable> {
