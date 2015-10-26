@@ -70,7 +70,7 @@ public class OrderInversion extends Configured implements Tool {
         public int getPartition(TextPair key, IntWritable value, int numPartitions) {
             // _TODO: implement getPartition such that pairs with the same first element
             //       will go to the same reducer.
-            return Math.abs(key.getFirst().hashCode()) % numPartitions;
+            return Math.abs(key.getFirst().hashCode() % numPartitions);
         }
     }
 
