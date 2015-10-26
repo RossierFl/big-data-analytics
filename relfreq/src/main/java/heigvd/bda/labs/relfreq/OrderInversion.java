@@ -147,7 +147,6 @@ public class OrderInversion extends Configured implements Tool {
                 relativeCount.set(sum / (double) countWord);
                 context.write(key, relativeCount);
             }
-            System.out.println("Key is (" + key.getFirst().toString() + ", " + key.getSecond().toString() + ")");
         }
     }
 
