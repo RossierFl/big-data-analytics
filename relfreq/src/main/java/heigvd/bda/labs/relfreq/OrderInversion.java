@@ -1,9 +1,7 @@
 package heigvd.bda.labs.relfreq;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.StringTokenizer;
+import java.util.*;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -25,111 +23,154 @@ import org.apache.hadoop.util.ToolRunner;
 import heigvd.bda.labs.utils.TextPair;
 
 public class OrderInversion extends Configured implements Tool {
-	
-	private int numReducers;
-	private Path inputPath;
-	private Path outputPath;
-	
-	private final static String ASTERISK = "\0";
-	
-	/**
-	 * OrderInversion Constructor.
-	 * 
-	 * @param args
-	 */
-	public OrderInversion(String[] args) {
-		if (args.length != 3) {
-			System.out.println("Usage: OrderInversion <num_reducers> <input_path> <output_path>");
-			System.exit(0);
-		}
-		numReducers = Integer.parseInt(args[0]);
-		inputPath = new Path(args[1]);
-		outputPath = new Path(args[2]);
-	}
-	
-	/**
-	 * Utility to split a line of text in words.
-	 * The text is first transformed to lowercase, all non-alphanumeric characters are removed.
-	 * All spaces are removed and the text is tokenized using Java StringTokenizer.
-	 *  
-	 * @param text what we want to split
-	 * @return words in text as an Array of String
-	 */
-	public static String[] words(String text) {
-		text = text.toLowerCase();
-		text = text.replaceAll("[^a-z]+", " ");
-		text = text.replaceAll("^\\s+", "");	
-	    StringTokenizer st = new StringTokenizer(text);
-	    ArrayList<String> result = new ArrayList<String>();
-	    while (st.hasMoreTokens())
-	    	result.add(st.nextToken());
-	    return Arrays.copyOf(result.toArray(),result.size(),String[].class);
-	}	
-	
-	public static class PartitionerTextPair extends Partitioner<TextPair, IntWritable> {
-		
-		@Override
-		public int getPartition(TextPair key, IntWritable value, int numPartitions) {
-			
-      		// TODO: implement getPartition such that pairs with the same first element
-      		//       will go to the same reducer.
-      		return 0;		
-		
-		}
-	}
-	
-	public static class OrderInversionMapper extends Mapper<LongWritable, Text, TextPair, IntWritable> {
 
-		@Override
-		public void map(LongWritable key, Text value, Context context)
-			throws java.io.IOException, InterruptedException {
+    private int numReducers;
+    private Path inputPath;
+    private Path outputPath;
 
-      		// TODO: implement the map method
-		}
-	}
+    private final static String ASTERISK = "\0";
 
-	public static class OrderInversionReducer extends Reducer<TextPair, IntWritable, TextPair, DoubleWritable> {
+    /**
+     * OrderInversion Constructor.
+     *
+     * @param args
+     */
+    public OrderInversion(String[] args) {
+        if (args.length != 3) {
+            System.out.println("Usage: OrderInversion <num_reducers> <input_path> <output_path>");
+            System.exit(0);
+        }
+        numReducers = Integer.parseInt(args[0]);
+        inputPath = new Path(args[1]);
+        outputPath = new Path(args[2]);
+    }
 
-		@Override
-		public void reduce(TextPair key, Iterable<IntWritable> values, Context context) 
-			throws IOException, InterruptedException {
+    /**
+     * Utility to split a line of text in words.
+     * The text is first transformed to lowercase, all non-alphanumeric characters are removed.
+     * All spaces are removed and the text is tokenized using Java StringTokenizer.
+     *
+     * @param text what we want to split
+     * @return words in text as an Array of String
+     */
+    public static String[] words(String text) {
+        text = text.toLowerCase();
+        text = text.replaceAll("[^a-z]+", " ");
+        text = text.replaceAll("^\\s+", "");
+        StringTokenizer st = new StringTokenizer(text);
+        ArrayList<String> result = new ArrayList<String>();
+        while (st.hasMoreTokens())
+            result.add(st.nextToken());
+        return Arrays.copyOf(result.toArray(), result.size(), String[].class);
+    }
 
-		    // TODO: implement the reduce method			
+    public static class PartitionerTextPair extends Partitioner<TextPair, IntWritable> {
 
-		}
-	}
+        @Override
+        public int getPartition(TextPair key, IntWritable value, int numPartitions) {
+            // _TODO: implement getPartition such that pairs with the same first element
+            //       will go to the same reducer.
+            return key.getFirst().hashCode() % numPartitions;
+        }
+    }
 
-	public int run(String[] args) throws Exception {
-		
-		Configuration conf = getConf();
-		Job job = new Job(conf, "Order Inversion");
+    public static class OrderInversionMapper extends Mapper<LongWritable, Text, TextPair, IntWritable> {
 
-		job.setJarByClass(OrderInversion.class);
+        private Text word1;
+        private Text word2;
+        private TextPair combinedKey;
+        private IntWritable countValue;
 
-		job.setMapperClass(OrderInversionMapper.class);
-		job.setReducerClass(OrderInversionReducer.class);
+        @Override
+        protected void setup(Context context) throws IOException, InterruptedException {
+            word1 = new Text();
+            word2 = new Text();
+            combinedKey = new TextPair();
+            combinedKey.set(word1, word2);
+            countValue = new IntWritable(1);
+        }
 
-		job.setMapOutputKeyClass(TextPair.class);
-		job.setMapOutputValueClass(IntWritable.class);
+        @Override
+        public void map(LongWritable key, Text value, Context context) throws java.io.IOException, InterruptedException {
+            String[] words = words(value.toString());
 
-		job.setOutputKeyClass(TextPair.class);
-		job.setOutputValueClass(DoubleWritable.class);
+            // Emit combining of the two words
+            for (int i = 1; i < words.length; i++) {
+                word1.set(words[i - 1]);
+                word2.set(words[i]);
+                context.write(combinedKey, countValue);
+            }
 
-		TextInputFormat.addInputPath(job, inputPath);
-		job.setInputFormatClass(TextInputFormat.class);
+            // Emit each words separately
+            word2.set(ASTERISK);
+            for (String word : words) {
+                word1.set(word);
+                context.write(combinedKey, countValue);
+            }
+        }
 
-		FileOutputFormat.setOutputPath(job, outputPath);
-		job.setOutputFormatClass(TextOutputFormat.class);
+        @Override
+        protected void cleanup(Context context) throws IOException, InterruptedException {
+        }
+    }
 
-		// TODO: set the partitioner and sort order
+    public static class OrderInversionReducer extends Reducer<TextPair, IntWritable, TextPair, DoubleWritable> {
 
-		job.setNumReduceTasks(numReducers);
+        private long countWord;
+        private DoubleWritable relativeCount = new DoubleWritable();
 
-		return job.waitForCompletion(true) ? 0 : 1;
-	}
+        @Override
+        protected void setup(Context context) throws IOException, InterruptedException {
+        }
 
-	public static void main(String[] args) throws Exception {
-		int res = ToolRunner.run(new Configuration(), new OrderInversion(args), args);
-		System.exit(res);
-	}
+        @Override
+        public void reduce(TextPair key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
+            int sum = 0;
+            for (IntWritable v : values) {
+                sum += v.get();
+            }
+            if (key.getSecond().toString().equals(ASTERISK)) {
+                countWord = sum;
+            } else {
+                relativeCount.set(sum / (double) countWord);
+                context.write(key, relativeCount);
+            }
+            System.out.println("Key is (" + key.getFirst().toString() + ", " + key.getSecond().toString() + ")");
+        }
+    }
+
+    public int run(String[] args) throws Exception {
+
+        Configuration conf = getConf();
+        Job job = new Job(conf, "Order Inversion");
+
+        job.setJarByClass(OrderInversion.class);
+
+        job.setMapperClass(OrderInversionMapper.class);
+        job.setReducerClass(OrderInversionReducer.class);
+
+        job.setMapOutputKeyClass(TextPair.class);
+        job.setMapOutputValueClass(IntWritable.class);
+
+        job.setOutputKeyClass(TextPair.class);
+        job.setOutputValueClass(DoubleWritable.class);
+
+        TextInputFormat.addInputPath(job, inputPath);
+        job.setInputFormatClass(TextInputFormat.class);
+
+        FileOutputFormat.setOutputPath(job, outputPath);
+        job.setOutputFormatClass(TextOutputFormat.class);
+
+        // _TODO: set the partitioner and sort order
+        job.setPartitionerClass(PartitionerTextPair.class);
+
+        job.setNumReduceTasks(numReducers);
+
+        return job.waitForCompletion(true) ? 0 : 1;
+    }
+
+    public static void main(String[] args) throws Exception {
+        int res = ToolRunner.run(new Configuration(), new OrderInversion(args), args);
+        System.exit(res);
+    }
 }
