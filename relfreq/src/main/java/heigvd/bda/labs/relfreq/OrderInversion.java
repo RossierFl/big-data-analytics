@@ -70,7 +70,7 @@ public class OrderInversion extends Configured implements Tool {
         public int getPartition(TextPair key, IntWritable value, int numPartitions) {
             // _TODO: implement getPartition such that pairs with the same first element
             //       will go to the same reducer.
-            return key.getFirst().hashCode() % numPartitions;
+            return Math.abs(key.getFirst().hashCode()) % numPartitions;
         }
     }
 
@@ -80,6 +80,7 @@ public class OrderInversion extends Configured implements Tool {
         private Text word2;
         private TextPair combinedKey;
         private IntWritable countValue;
+        private Map<String, Integer> wordCombining;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
@@ -88,6 +89,7 @@ public class OrderInversion extends Configured implements Tool {
             combinedKey = new TextPair();
             combinedKey.set(word1, word2);
             countValue = new IntWritable(1);
+            wordCombining = new HashMap<>();
         }
 
         @Override
@@ -102,15 +104,25 @@ public class OrderInversion extends Configured implements Tool {
             }
 
             // Emit each words separately
-            word2.set(ASTERISK);
             for (String word : words) {
-                word1.set(word);
-                context.write(combinedKey, countValue);
+                if (!wordCombining.containsKey(word)) {
+                    wordCombining.put(word, 1);
+                } else {
+                    wordCombining.put(word, wordCombining.get(word) + 1);
+                }
             }
         }
 
         @Override
         protected void cleanup(Context context) throws IOException, InterruptedException {
+            Iterator<Map.Entry<String, Integer>> itr = wordCombining.entrySet().iterator();
+            word2.set(ASTERISK);
+            while (itr.hasNext()) {
+                Map.Entry<String, Integer> entry = itr.next();
+                word1.set(entry.getKey());
+                countValue.set(entry.getValue());
+                context.write(combinedKey, countValue);
+            }
         }
     }
 
