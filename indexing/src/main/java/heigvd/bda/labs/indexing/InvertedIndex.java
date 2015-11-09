@@ -72,16 +72,13 @@ public class InvertedIndex extends Configured implements Tool {
         // TODO : DEFINE VARIABLES
 
         @Override
-        protected void setup(Context context) throws IOException,
-                InterruptedException {
+        protected void setup(Context context) throws IOException, InterruptedException {
             super.setup(context);
             // TODO : INITIALIZE VARIABLES
         }
 
         @Override
-        protected void map(LongWritable key, Text value, Context context)
-                throws IOException, InterruptedException {
-
+        protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
             // USED FOR BIBLE & SHAKES
             for (String word : InvertedIndex.words(value.toString())) {
                 // TODO : COMPLETE MAP
@@ -99,8 +96,7 @@ public class InvertedIndex extends Configured implements Tool {
         }
 
         @Override
-        protected void cleanup(Context context) throws IOException,
-                InterruptedException {
+        protected void cleanup(Context context) throws IOException, InterruptedException {
             // TODO : CLEANUP
             super.cleanup(context);
         }
@@ -115,22 +111,19 @@ public class InvertedIndex extends Configured implements Tool {
         // TODO : DEFINE VARIABLES
 
         @Override
-        protected void setup(Context context) throws IOException,
-                InterruptedException {
+        protected void setup(Context context) throws IOException, InterruptedException {
             super.setup(context);
             // TODO : INITIALIZE VARIABLES
         }
 
         @Override
-        protected void reduce(Text key, Iterable<TextPair> values, Context context)
-                throws IOException, InterruptedException {
+        protected void reduce(Text key, Iterable<TextPair> values, Context context) throws IOException, InterruptedException {
 
             // TODO : COMPLETE REDUCE
         }
 
         @Override
-        protected void cleanup(Context context) throws IOException,
-                InterruptedException {
+        protected void cleanup(Context context) throws IOException, InterruptedException {
             // TODO : COMPLETE CLEANUP
             super.cleanup(context);
         }
