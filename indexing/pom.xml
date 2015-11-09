@@ -18,6 +18,22 @@
           <target>1.7</target>
         </configuration>
       </plugin>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
+        </configuration>
+      </plugin>
     </plugins>
   </build>   
   <dependencies>
@@ -31,6 +47,16 @@
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-core</artifactId>
       <version>1.0.3</version>    
+    </dependency>
+    <dependency>
+      <groupId>tl.lin</groupId>
+      <artifactId>lintools-datatypes</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>tl.lin</groupId>
+      <artifactId>lintools-datatypes-fastutil</artifactId>
+      <version>1.0.0</version>
     </dependency>   
   </dependencies>
 </project>
