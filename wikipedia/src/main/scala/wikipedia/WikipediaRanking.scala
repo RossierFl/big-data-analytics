@@ -61,33 +61,34 @@ object WikipediaRanking {
    */
   def rankLangsReduceByKey(langs: List[String], rdd: RDD[WikipediaArticle]): List[(String, Int)] = ???
 
-  def main(args: Array[String]) {
+  
+    def main(args: Array[String]) {
+  
+          /* Languages ranked according to (1) */
+          val langsRanked: List[(String, Int)] = timed("Part 1: naive ranking", rankLangs(langs, wikiRdd))
+          println(langsRanked)
+      
+          /* An inverted index mapping languages to wikipedia pages on which they appear */
+          def index: RDD[(String, Iterable[WikipediaArticle])] = makeIndex(langs, wikiRdd)
+      
+          /* Languages ranked according to (2), using the inverted index */
+          val langsRanked2: List[(String, Int)] = timed("Part 2: ranking using inverted index", rankLangsUsingIndex(index))
+          println(langsRanked2)
+      
+          /* Languages ranked according to (3) */
+          val langsRanked3: List[(String, Int)] = timed("Part 3: ranking using reduceByKey", rankLangsReduceByKey(langs, wikiRdd))
+          println(langsRanked3)
+      
+          /* Output the speed of each ranking */
+          println(timing)
+    }
 
-    /* Languages ranked according to (1) */
-    val langsRanked: List[(String, Int)] = timed("Part 1: naive ranking", rankLangs(langs, wikiRdd))
-    println(langsRanked)
-
-    /* An inverted index mapping languages to wikipedia pages on which they appear */
-    def index: RDD[(String, Iterable[WikipediaArticle])] = makeIndex(langs, wikiRdd)
-
-    /* Languages ranked according to (2), using the inverted index */
-    val langsRanked2: List[(String, Int)] = timed("Part 2: ranking using inverted index", rankLangsUsingIndex(index))
-    println(langsRanked2)
-
-    /* Languages ranked according to (3) */
-    val langsRanked3: List[(String, Int)] = timed("Part 3: ranking using reduceByKey", rankLangsReduceByKey(langs, wikiRdd))
-    println(langsRanked3)
-
-    /* Output the speed of each ranking */
-    println(timing)
-  }
-
-  val timing = new StringBuffer
-  def timed[T](label: String, code: => T): T = {
-    val start = System.currentTimeMillis()
-    val result = code
-    val stop = System.currentTimeMillis()
-    timing.append(s"Processing $label took ${stop - start} ms.\n")
-    result
-  }
+    val timing = new StringBuffer
+    def timed[T](label: String, code: => T): T = {
+        val start = System.currentTimeMillis()
+        val result = code
+        val stop = System.currentTimeMillis()
+        timing.append(s"Processing $label took ${stop - start} ms.\n")
+        result
+    }
 }
