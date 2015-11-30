@@ -22,6 +22,12 @@ class WikipediaSuite extends FunSuite with BeforeAndAfterAll {
     val res = occurrencesOfLang("Java", rdd)
     assert(res == 1, "occurrencesOfLang given (specific) RDD with one element should equal to 1")
   }
+  
+  test("'occurrencesOfLang(java)' occurrencesOfLang(java) with javascript in text should be 0") {
+    val javardd = sc.parallelize(Seq(WikipediaArticle("title", "Javascript is a very shitty scripting programming language")))
+    val secondRes = occurrencesOfLang("Java", javardd)
+    assert(secondRes == 0, "occurrencesOfLang(java) with javascript in text should be 0")
+  }
 
   test("'rankLangs' should work for RDD with two elements") {
     val langs = List("Scala", "Java")
@@ -31,27 +37,31 @@ class WikipediaSuite extends FunSuite with BeforeAndAfterAll {
   }
 
   test("'makeIndex' creates a simple index with two entries") {
-    val langs = List("Scala", "Java")
+    val langs = List("Scala", "Java","C++")
     val articles = List(
         WikipediaArticle("1","Groovy is pretty interesting, and so is Erlang"),
         WikipediaArticle("2","Scala and Java run on the JVM"),
-        WikipediaArticle("3","Scala is not purely functional")
+        WikipediaArticle("3","Scala is not purely functional"),
+        WikipediaArticle("4","Java is very verbose but usefull sometimes")
       )
     val rdd = sc.parallelize(articles)
     val index = makeIndex(langs, rdd)
+    //index.foreach(println)
     assert(index.count() == 2)
   }
 
   test("'rankLangsUsingIndex' should work for a simple RDD with three elements") {
-    val langs = List("Scala", "Java")
+    val langs = List("Scala", "Java","C")
     val articles = List(
         WikipediaArticle("1","Groovy is pretty interesting, and so is Erlang"),
         WikipediaArticle("2","Scala and Java run on the JVM"),
-        WikipediaArticle("3","Scala is not purely functional")
+        WikipediaArticle("3","Scala is not purely functional"),
+        WikipediaArticle("4","C is powerfull, powerfull to shoot you in the foot")
       )
     val rdd = sc.parallelize(articles)
     val index = makeIndex(langs, rdd)
     val ranked = rankLangsUsingIndex(index)
+    ranked.foreach(println)
     assert(ranked.head._1 == "Scala")
   }
 
